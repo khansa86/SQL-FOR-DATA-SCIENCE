@@ -1,57 +1,87 @@
--- How many albums does the artist Led Zeppelin have? 
+-- All of the questions in this quiz refer to the open source Chinook Database. 
+-- Please familiarize yourself with the ER diagram in order to familiarize yourself with the table and column names
+--  in order to write accurate queries and get the appropriate answers.
 
-SELECT a.ArtistId, count(*)
-,a.name
-,al.title
-FROM artists a JOIN albums al
-ON a.ArtistId=al.ArtistId
-WHERE name = 'Led Zeppelin';
 
-------------------------------------------------------------------------------------
+-- Q1) Using a subquery, find the names of all the tracks for the album "Californication".
 
--- Q2) Create a list of album titles and the unit prices for the artist "Audioslave".
-
-SELECT al.AlbumId
-,al.title
-,a.name
-,t.unitprice 
-FROM artists a JOIN albums al
-ON a.ArtistId = al.ArtistId
-JOIN tracks t 
-ON t.AlbumId =al.AlbumId
-WHERE a.name='Audioslave';
+SELECT AlbumId
+,name
+FROM Tracks
+WHERE AlbumId IN (
+    SELECT AlbumId
+    FROM Albums
+    WHERE Title = 'Californication'
+);
 
 ------------------------------------------------------------------------------------
 
--- Q3) Find the first and last name of any customer who does not have an invoice. Are there any customers returned from the query? 
-
-SELECT c.FirstName
-,c.LastName
-,i.CustomerId
-,i.invoiceId
-FROM  invoices i
-JOIN customers c 
-ON c.CustomerId = i.CustomerId
-WHERE invoiceId = NULL;
-------------------------------------------------------------------------------------
-
--- Q4) Find the total price for each album.
--- What is the total price for the album “Big Ones”?
-
-SELECT al.title, 
-       sum(t.unitprice) total_price
-FROM albums al 
-JOIN tracks t 
-ON t.albumid = al.albumid
-WHERE al.title = 'Big Ones' -- Only to get big ones
-GROUP BY al.title;
-
-------------------------------------------------------------------------------------
-
--- Q5) How many records are created when you apply a Cartesian join to the invoice and invoice items table?
+-- Q2) Find the total number of invoices for each customer along with the customer's full name, city and email
 
 SELECT i.InvoiceId
-,UnitPrice
-FROM invoices i CROSS JOIN 
-invoice_Items it;
+,count(*)
+,c.CustomerId
+,c.FirstName
+,c.LastName
+,c.City
+,c.Email
+FROM Customers c  LEFT JOIN
+Invoices i ON c.CustomerId = i.CustomerId
+GROUP BY i.CustomerId;
 
+------------------------------------------------------------------------------------
+
+-- Q3) Retrieve the track name, album, artistID, and trackID for all the albums. REturn For TrackId 12
+
+SELECT
+ t.TrackId
+,t.Name
+,a.Name AS Artist
+,al.Title AS Album
+
+FROM ((Albums al INNER JOIN Tracks t
+ON al.AlbumId= t.trackId)
+    INNER JOIN Artists a ON a.ArtistId=al.ArtistId)
+WHERE TrackId= 12;
+------------------------------------------------------------------------------------
+
+-- Q4) Retrieve a list with the managers last name, and the last name of the employees who report to him or her.
+
+SELECT m.LastName AS managers
+,e.LastName AS Employees
+FROM Employees e , Employees m 
+WHERE m.EmployeeId = e.ReportsTo;
+
+------------------------------------------------------------------------------------
+
+-- Q5) Find the name and ID of the artists who do not have albums. 
+
+SELECT Name AS Artist,
+       a.ArtistId,
+       al.Title AS Album
+FROM Artists a
+LEFT JOIN Albums al
+ON a.ArtistId = al.ArtistId
+WHERE Album IS NULL;
+
+---------------------------------------------------------------------------------------------
+-- Q6) Use a UNION to create a list of all the employee's and customer's first names and last names ordered by the last name in descending order.
+SELECT FirstName
+    ,LastName
+FROM Employees
+
+UNION
+
+SELECT FirstName
+    ,LastName
+FROM Customers
+Order BY LastName DESC;
+
+------------------------------------------------------------------------------------------------------
+-- Q7) See if there are any customers who have a different city listed in their billing city versus their customer city
+SELECT c.CustomerId
+    ,c.City
+    ,i.BillingCity
+FROM Customers c LEFT JOIN Invoices i
+    ON c.CustomerId = i.CustomerId
+WHERE BillingCity !=  City;
